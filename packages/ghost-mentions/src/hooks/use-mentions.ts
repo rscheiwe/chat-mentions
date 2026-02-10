@@ -51,7 +51,7 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
 
   // ---------- utilities ----------
   const inToken = (pos: number) =>
-    tokens.find((t) => pos > t.start && pos < t.end);
+    tokens.find((t) => pos > t.start && pos <= t.end);
 
   const tokenAtOrAdjacentForBackspace = (pos: number) =>
     tokens.find((t) => pos === t.end || (pos > t.start && pos <= t.end));
@@ -94,6 +94,13 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
 
       // Walk backward to find a trigger at a word boundary
       for (let i = caretPos - 1; i >= 0; i--) {
+        // Skip positions inside existing tokens so we don't re-detect their trigger char
+        const hitToken = tokens.find((t) => i >= t.start && i < t.end);
+        if (hitToken) {
+          i = hitToken.start; // loop decrements to start - 1
+          continue;
+        }
+
         const ch = text[i];
         if (ch in triggers) {
           if (i === 0 || /\s/.test(text[i - 1])) {

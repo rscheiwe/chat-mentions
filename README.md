@@ -1,4 +1,4 @@
-# Ghost Mentions
+# Chat Mentions
 
 A lightweight React mention system built for controlled `textarea` inputs and AI chat prompt fields.
 It provides a headless hook, textarea bindings, ghost-highlight rendering, and popup/dialog pickers without requiring a rich text editor.
@@ -18,29 +18,29 @@ It provides a headless hook, textarea bindings, ghost-highlight rendering, and p
 
 | Popup picker | Demo |
 | --- | --- |
-| <img src="docs/assets/mentions-popup.png" alt="Ghost Mentions popup picker" width="420" /> | <img src="docs/assets/mentions.png" alt="Ghost Mentions demo" width="420" /> |
+| <img src="docs/assets/mentions-popup.png" alt="Chat Mentions popup picker" width="420" /> | <img src="docs/assets/mentions.png" alt="Chat Mentions demo" width="420" /> |
 
 ## Package Status
 
-This package is structured like a normal npm package, but `ghost-mentions` is not published to npm yet.
+This package is structured like a normal npm package, but `chat-mentions` is not published to npm yet.
 
 After publishing:
 
 ```bash
-pnpm add ghost-mentions
+pnpm add chat-mentions
 # or
-npm install ghost-mentions
+npm install chat-mentions
 ```
 
 Before publishing, test installation from a local tarball:
 
 ```bash
-cd packages/ghost-mentions
+cd packages/chat-mentions
 pnpm build
 pnpm pack --pack-destination /tmp
 
 cd /path/to/your-app
-pnpm add /tmp/ghost-mentions-0.1.0.tgz
+pnpm add /tmp/chat-mentions-0.1.0.tgz
 ```
 
 Peer dependencies:
@@ -56,13 +56,13 @@ pnpm add react react-dom @radix-ui/react-dialog @radix-ui/react-dropdown-menu
 Import the package stylesheet once in your app, usually from a layout or global CSS entry:
 
 ```tsx
-import "ghost-mentions/styles";
+import "chat-mentions/styles";
 ```
 
 or:
 
 ```css
-@import "ghost-mentions/styles";
+@import "chat-mentions/styles";
 ```
 
 The stylesheet is plain CSS. It does not bundle Tailwind base or utilities.
@@ -84,7 +84,7 @@ If your app does not define those variables, either define them globally or over
 .mention-textarea {}
 ```
 
-`mention-textarea` sets the textarea text color to transparent so the highlight overlay can show the mention pills behind the caret. Keep that class on textareas managed by Ghost Mentions.
+`mention-textarea` sets the textarea text color to transparent so the highlight overlay can show the mention pills behind the caret. Keep that class on textareas managed by Chat Mentions.
 
 ## Quick Start
 
@@ -94,9 +94,9 @@ If your app does not define those variables, either define them globally or over
 "use client";
 
 import { useState } from "react";
-import { MentionInput } from "ghost-mentions";
-import type { MentionEntity, Triggers } from "ghost-mentions";
-import "ghost-mentions/styles";
+import { MentionInput } from "chat-mentions";
+import type { MentionEntity, Triggers } from "chat-mentions";
+import "chat-mentions/styles";
 
 const agents: MentionEntity[] = [
   { id: "coder", label: "Coder", type: "agent" },
@@ -146,9 +146,9 @@ Use this when you need to integrate with a custom textarea component.
 "use client";
 
 import { useState } from "react";
-import { MentionContainer, useMentions } from "ghost-mentions";
-import type { Triggers } from "ghost-mentions";
-import "ghost-mentions/styles";
+import { MentionContainer, useMentions } from "chat-mentions";
+import type { Triggers } from "chat-mentions";
+import "chat-mentions/styles";
 
 export function CustomInput({ triggers }: { triggers: Triggers }) {
   const [value, setValue] = useState("");
@@ -178,7 +178,7 @@ export function CustomInput({ triggers }: { triggers: Triggers }) {
 
 ## AI SDK Elements PromptInput
 
-Ghost Mentions can wrap the AI Elements `PromptInputTextarea` while leaving `PromptInput` responsible for layout and submit-button behavior.
+Chat Mentions can wrap the AI Elements `PromptInputTextarea` while leaving `PromptInput` responsible for layout and submit-button behavior.
 
 Install AI SDK packages and add the AI Elements prompt input component:
 
@@ -197,8 +197,8 @@ This matches the demo app pattern: the user enters an OpenAI key locally, and ea
 import { useMemo, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MentionContainer, useMentions } from "ghost-mentions";
-import type { SendPayload, Triggers } from "ghost-mentions";
+import { MentionContainer, useMentions } from "chat-mentions";
+import type { SendPayload, Triggers } from "chat-mentions";
 import {
   PromptInput,
   PromptInputFooter,
@@ -332,7 +332,7 @@ const { ref: _mentionRef, ...mentionBindProps } = mention.bind;
 </MentionContainer>
 ```
 
-Ghost Mentions handles Enter through `useMentions({ onSend })`. `PromptInput.onSubmit` should still handle submit-button clicks, and both paths should send the same payload.
+Chat Mentions handles Enter through `useMentions({ onSend })`. `PromptInput.onSubmit` should still handle submit-button clicks, and both paths should send the same payload.
 
 ## API Reference
 
@@ -447,8 +447,8 @@ The exact token positions depend on the controlled textarea value and internal s
 ## Development
 
 ```bash
-git clone https://github.com/yourusername/ghost-mentions
-cd ghost-mentions
+git clone https://github.com/yourusername/chat-mentions
+cd chat-mentions
 pnpm install
 pnpm dev
 ```
@@ -462,14 +462,14 @@ http://localhost:3003
 Useful checks:
 
 ```bash
-pnpm --filter ghost-mentions test:run
+pnpm --filter chat-mentions test:run
 pnpm -r build
 ```
 
 To inspect the publish tarball:
 
 ```bash
-cd packages/ghost-mentions
+cd packages/chat-mentions
 pnpm pack --pack-destination /tmp
 ```
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMentions, MentionContainer, MentionInput } from "ghost-mentions";
-import type { MentionEntity, Triggers } from "ghost-mentions";
+import { useMentions, MentionContainer, MentionInput } from "chat-mentions";
+import type { MentionEntity, Triggers } from "chat-mentions";
 
 // Mock data
 const mockAgents = [
@@ -75,7 +75,7 @@ export default function Home() {
     <main className="min-h-screen p-8 max-w-4xl mx-auto">
       <div className="space-y-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2">Ghost Mentions Demo</h1>
+          <h1 className="text-4xl font-bold mb-2">Chat Mentions Demo</h1>
           <p className="text-muted-foreground">
             A lightweight mentions system for shadcn + Tailwind
           </p>

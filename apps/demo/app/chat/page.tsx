@@ -4,8 +4,8 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo, type ReactNode }
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import ReactMarkdown from "react-markdown";
-import { useMentions, MentionContainer } from "ghost-mentions";
-import type { MentionEntity, Triggers, SendPayload } from "ghost-mentions";
+import { useMentions, MentionContainer } from "chat-mentions";
+import type { MentionEntity, Triggers, SendPayload } from "chat-mentions";
 import {
   PromptInput,
   PromptInputTextarea,
@@ -171,7 +171,7 @@ export default function ChatPage() {
       {/* Header */}
       <div className="border-b px-6 py-4 flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-xl font-semibold">AI Chat + Ghost Mentions</h1>
+          <h1 className="text-xl font-semibold">AI Chat + Chat Mentions</h1>
           <p className="text-xs text-muted-foreground">
             Type @ for agents, # for tags. Uses <code>useChat</code> from AI SDK v6.
           </p>
@@ -283,7 +283,7 @@ export default function ChatPage() {
         <TooltipProvider>
           <PromptInput
             onSubmit={(message) => {
-              // Fallback for submit-button clicks (Enter is handled by ghost-mentions onSend)
+              // Fallback for submit-button clicks (Enter is handled by chat-mentions onSend)
               if (!apiKey) return;
               const text = mention.markdown() || message.text;
               if (!text.trim()) return;

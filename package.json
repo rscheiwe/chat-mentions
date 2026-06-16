@@ -1,5 +1,5 @@
 {
-  "name": "ghost-mentions",
+  "name": "chat-mentions",
   "private": true,
   "version": "0.0.0",
   "description": "Lightweight, textarea-first mentions system for shadcn + Vercel AI",

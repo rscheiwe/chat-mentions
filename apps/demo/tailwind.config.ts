@@ -7,7 +7,7 @@ const config: Config = {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
-    "../../packages/ghost-mentions/src/**/*.{ts,tsx}",
+    "../../packages/chat-mentions/src/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {

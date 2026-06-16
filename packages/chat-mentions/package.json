@@ -1,5 +1,5 @@
 {
-  "name": "ghost-mentions",
+  "name": "chat-mentions",
   "version": "0.1.0",
   "description": "A lightweight mentions system for React with shadcn/ui and Tailwind CSS",
   "type": "module",

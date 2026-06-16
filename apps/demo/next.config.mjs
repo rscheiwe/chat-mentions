@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["ghost-mentions"],
+  transpilePackages: ["chat-mentions"],
 };
 
 export default nextConfig;

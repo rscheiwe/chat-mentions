@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "ghost-mentions/styles";
+import "chat-mentions/styles";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ghost Mentions Demo",
+  title: "Chat Mentions Demo",
   description: "Lightweight mentions system for shadcn + Tailwind",
 };
 

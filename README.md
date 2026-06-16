@@ -16,9 +16,17 @@ It provides a headless hook, textarea bindings, ghost-highlight rendering, and p
 
 ## Preview
 
-| Popup picker | Demo |
+### Demo Flow
+
+| Input | Output |
 | --- | --- |
-| <img src="docs/assets/mentions-popup.png" alt="Chat Mentions popup picker" width="420" /> | <img src="docs/assets/mentions.png" alt="Chat Mentions demo" width="420" /> |
+| <img src="docs/assets/mentions.png" alt="Chat Mentions demo input" width="420" /> | <img src="docs/assets/request-text.png" alt="Chat Mentions request text output" width="420" /> |
+
+### Pickers
+
+| Popup picker                                                                              | Dialog picker                                                                 |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| <img src="docs/assets/mentions-popup.png" alt="Chat Mentions popup picker" width="420" /> | <img src="docs/assets/mentions-dialogue.png" alt="Chat Mentions dialog picker" width="420" /> |
 
 ## Package Status
 
@@ -79,9 +87,12 @@ Default styles use shadcn-style CSS variables:
 If your app does not define those variables, either define them globally or override:
 
 ```css
-.mention-highlight {}
-.mention-highlight-overlay {}
-.mention-textarea {}
+.mention-highlight {
+}
+.mention-highlight-overlay {
+}
+.mention-textarea {
+}
 ```
 
 `mention-textarea` sets the textarea text color to transparent so the highlight overlay can show the mention pills behind the caret. Keep that class on textareas managed by Chat Mentions.
@@ -329,7 +340,7 @@ const { ref: _mentionRef, ...mentionBindProps } = mention.bind;
 
 <MentionContainer mention={mention} mode="popup">
   <PromptInputTextarea {...mentionBindProps} />
-</MentionContainer>
+</MentionContainer>;
 ```
 
 Chat Mentions handles Enter through `useMentions({ onSend })`. `PromptInput.onSubmit` should still handle submit-button clicks, and both paths should send the same payload.
@@ -338,14 +349,14 @@ Chat Mentions handles Enter through `useMentions({ onSend })`. `PromptInput.onSu
 
 ### `useMentions(config)`
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `value` | `string` | Controlled textarea value |
-| `onValueChange` | `(value: string) => void` | Controlled value setter |
-| `triggers` | `Record<string, TriggerConfig>` | Trigger definitions |
-| `onSend` | `(payload: SendPayload) => void` | Called on Enter when provided |
-| `persistOnSend` | `"keep" \| "prefix" \| "clear"` | How mention tokens persist after send. Default: `"keep"` |
-| `picker` | `{ mode: "popup" \| "dialog" }` | Picker mode. Default: `{ mode: "popup" }` |
+| Prop            | Type                             | Description                                              |
+| --------------- | -------------------------------- | -------------------------------------------------------- |
+| `value`         | `string`                         | Controlled textarea value                                |
+| `onValueChange` | `(value: string) => void`        | Controlled value setter                                  |
+| `triggers`      | `Record<string, TriggerConfig>`  | Trigger definitions                                      |
+| `onSend`        | `(payload: SendPayload) => void` | Called on Enter when provided                            |
+| `persistOnSend` | `"keep" \| "prefix" \| "clear"`  | How mention tokens persist after send. Default: `"keep"` |
+| `picker`        | `{ mode: "popup" \| "dialog" }`  | Picker mode. Default: `{ mode: "popup" }`                |
 
 ### `TriggerConfig`
 
@@ -394,16 +405,16 @@ interface SendPayload {
 
 ### `UseMentionsResult`
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `bind` | `TextareaBindings` | Props to spread onto a textarea |
-| `tokens` | `MentionToken[]` | Current mention tokens |
-| `highlights` | `HighlightRange[]` | Ranges consumed by `MentionHighlights` |
-| `menu` | `MenuState` | Current picker state |
-| `strip()` | `() => string` | Text with mention token display text removed |
-| `markdown()` | `() => string` | Text serialized with `@[Label](type:id)` mentions |
-| `insertMention` | `(entity: MentionEntity) => void` | Insert the selected entity |
-| `closeMenu` | `() => void` | Close the picker |
+| Property        | Type                              | Description                                       |
+| --------------- | --------------------------------- | ------------------------------------------------- |
+| `bind`          | `TextareaBindings`                | Props to spread onto a textarea                   |
+| `tokens`        | `MentionToken[]`                  | Current mention tokens                            |
+| `highlights`    | `HighlightRange[]`                | Ranges consumed by `MentionHighlights`            |
+| `menu`          | `MenuState`                       | Current picker state                              |
+| `strip()`       | `() => string`                    | Text with mention token display text removed      |
+| `markdown()`    | `() => string`                    | Text serialized with `@[Label](type:id)` mentions |
+| `insertMention` | `(entity: MentionEntity) => void` | Insert the selected entity                        |
+| `closeMenu`     | `() => void`                      | Close the picker                                  |
 
 ### Components
 
@@ -435,8 +446,22 @@ Example send payload shape:
 {
   "text": "Ask about",
   "mentions": [
-    { "id": "coder", "label": "Coder", "type": "agent", "trigger": "@", "start": 4, "end": 12 },
-    { "id": "perf", "label": "performance", "type": "tag", "trigger": "#", "start": 19, "end": 33 }
+    {
+      "id": "coder",
+      "label": "Coder",
+      "type": "agent",
+      "trigger": "@",
+      "start": 4,
+      "end": 12
+    },
+    {
+      "id": "perf",
+      "label": "performance",
+      "type": "tag",
+      "trigger": "#",
+      "start": 19,
+      "end": 33
+    }
   ],
   "markdown": "Ask @[Coder](agent:coder) about #[performance](tag:perf)"
 }
@@ -447,7 +472,7 @@ The exact token positions depend on the controlled textarea value and internal s
 ## Development
 
 ```bash
-git clone https://github.com/yourusername/chat-mentions
+git clone https://github.com/rscheiwe/chat-mentions
 cd chat-mentions
 pnpm install
 pnpm dev

@@ -1,7 +1,16 @@
 {
   "name": "chat-mentions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A lightweight mentions system for React with shadcn/ui and Tailwind CSS",
+  "homepage": "https://github.com/rscheiwe/chat-mentions#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rscheiwe/chat-mentions.git",
+    "directory": "packages/chat-mentions"
+  },
+  "bugs": {
+    "url": "https://github.com/rscheiwe/chat-mentions/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -15,7 +24,8 @@
     "./styles": "./dist/styles/mention.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "dev": "tsup --watch",

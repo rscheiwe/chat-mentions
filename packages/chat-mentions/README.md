@@ -20,13 +20,13 @@ It provides a headless hook, textarea bindings, ghost-highlight rendering, and p
 
 | Input | Output |
 | --- | --- |
-| <img src="docs/assets/mentions.png" alt="Chat Mentions demo input" width="420" /> | <img src="docs/assets/request-text.png" alt="Chat Mentions request text output" width="420" /> |
+| <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/mentions.png" alt="Chat Mentions demo input" width="420" /> | <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/request-text.png" alt="Chat Mentions request text output" width="420" /> |
 
 ### Pickers
 
 | Popup picker                                                                              | Dialog picker                                                                 |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| <img src="docs/assets/mentions-popup.png" alt="Chat Mentions popup picker" width="420" /> | <img src="docs/assets/mentions-dialogue.png" alt="Chat Mentions dialog picker" width="420" /> |
+| <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/mentions-popup.png" alt="Chat Mentions popup picker" width="420" /> | <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/mentions-dialogue.png" alt="Chat Mentions dialog picker" width="420" /> |
 
 ## Installation
 

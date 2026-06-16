@@ -1,6 +1,6 @@
 {
   "name": "chat-mentions",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A lightweight mentions system for React with shadcn/ui and Tailwind CSS",
   "homepage": "https://github.com/rscheiwe/chat-mentions#readme",
   "repository": {

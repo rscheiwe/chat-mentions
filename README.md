@@ -1,5 +1,9 @@
 # Chat Mentions
 
+[![npm version](https://img.shields.io/npm/v/chat-mentions.svg)](https://www.npmjs.com/package/chat-mentions)
+[![license](https://img.shields.io/npm/l/chat-mentions.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6.svg)](https://www.typescriptlang.org/)
+
 A lightweight React mention system built for controlled `textarea` inputs and AI chat prompt fields.
 It provides a headless hook, textarea bindings, ghost-highlight rendering, and popup/dialog pickers without requiring a rich text editor.
 

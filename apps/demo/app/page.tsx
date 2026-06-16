@@ -48,8 +48,8 @@ const fetchCommands = async (query: string): Promise<MentionEntity[]> => {
 };
 
 const triggers: Triggers = {
-  "@": { type: "agent", fetch: fetchAgents },
-  "#": { type: "tag", fetch: fetchTags },
+  "@": { type: "agent", fetch: fetchAgents, highlightStyle: { backgroundColor: "#d4eefb" } },
+  "#": { type: "tag", fetch: fetchTags, highlightStyle: { backgroundColor: "#fdf3cd" } },
   "/": { type: "command", fetch: fetchCommands },
 };
 
@@ -79,6 +79,12 @@ export default function Home() {
           <p className="text-muted-foreground">
             A lightweight mentions system for shadcn + Tailwind
           </p>
+          <a
+            href="/chat"
+            className="inline-block mt-3 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90"
+          >
+            Try AI Chat Demo →
+          </a>
         </div>
 
         <div className="space-y-6">

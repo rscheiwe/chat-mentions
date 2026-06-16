@@ -7,7 +7,7 @@ const config: Config = {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
-    "../../packages/mention-react/src/**/*.{ts,tsx}",
+    "../../packages/ghost-mentions/src/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
@@ -53,6 +53,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 };
 export default config;

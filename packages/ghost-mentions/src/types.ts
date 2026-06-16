@@ -1,4 +1,4 @@
-import { RefObject } from "react";
+import { CSSProperties, RefObject } from "react";
 
 /**
  * Basic entity returned by fetch functions
@@ -25,7 +25,9 @@ export interface TriggerConfig {
   type: string;
   fetch: (query: string) => Promise<MentionEntity[]>;
   minChars?: number;
+  debounce?: number;
   display?: (entity: MentionEntity) => string;
+  highlightStyle?: CSSProperties;
 }
 
 /**
@@ -64,6 +66,7 @@ export interface HighlightRange {
   end: number;
   label: string;
   type: string;
+  style?: CSSProperties;
 }
 
 /**

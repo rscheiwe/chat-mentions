@@ -1,54 +1,120 @@
-# 🧩 Ghost Mentions
+# Ghost Mentions
 
-A lightweight **React mention system** built for `textarea` and `PromptInput` fields.
-Designed to feel native in [Shadcn UI](https://ui.shadcn.com) + [Vercel AI Elements](https://github.com/vercel/ai-elements).
+A lightweight React mention system built for controlled `textarea` inputs and AI chat prompt fields.
+It provides a headless hook, textarea bindings, ghost-highlight rendering, and popup/dialog pickers without requiring a rich text editor.
 
-[![CI](https://github.com/yourusername/ghost-mentions/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/ghost-mentions/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Features
 
-## ✨ Features
+- **Textarea-first:** Works with native textareas and textarea-like prompt components.
+- **Headless hook:** `useMentions` owns token tracking, trigger detection, keyboard handling, and serialization.
+- **Atomic mentions:** Backspace/Delete removes an entire mention token, including the small post-mention cursor gap.
+- **Picker UI:** Includes caret-anchored popup and Radix Dialog picker components.
+- **Configurable triggers:** Supports `@`, `#`, `/`, or any trigger string key.
+- **Custom display:** Per-trigger `display(entity)` and `highlightStyle` hooks.
+- **Markdown output:** Serializes mentions as `@[Label](type:id)`.
+- **TypeScript:** Exports typed entities, tokens, config, payloads, and hook result types.
 
-- 🪶 **Headless hook:** `useMentions` – no dependency on any rich text editor
-- 🧠 **Smart tokens:** Mentions act atomically (delete/backspace-safe)
-- 🧩 **UI components:** `MentionPopup`, `MentionDialog`, and `MentionHighlights`
-- 🎨 **Shadcn-ready:** Built with Radix primitives and Tailwind design tokens
-- ⚡ **Zero heavy dependencies:** No TipTap, Lexical, or Draft.js
-- 🔧 **TypeScript:** Fully typed with comprehensive interfaces
-- 🧪 **Well tested:** Unit tests + component tests included
+## Preview
 
-## 🚀 Quick Start
+| Popup picker | Demo |
+| --- | --- |
+| <img src="docs/assets/mentions-popup.png" alt="Ghost Mentions popup picker" width="420" /> | <img src="docs/assets/mentions.png" alt="Ghost Mentions demo" width="420" /> |
 
-### Installation
+## Package Status
+
+This package is structured like a normal npm package, but `ghost-mentions` is not published to npm yet.
+
+After publishing:
 
 ```bash
-pnpm add ghost-mentions-core ghost-mentions-react
+pnpm add ghost-mentions
 # or
-npm install ghost-mentions-core ghost-mentions-react
-# or
-yarn add ghost-mentions-core ghost-mentions-react
+npm install ghost-mentions
 ```
 
-### Basic Usage
+Before publishing, test installation from a local tarball:
+
+```bash
+cd packages/ghost-mentions
+pnpm build
+pnpm pack --pack-destination /tmp
+
+cd /path/to/your-app
+pnpm add /tmp/ghost-mentions-0.1.0.tgz
+```
+
+Peer dependencies:
+
+```bash
+pnpm add react react-dom @radix-ui/react-dialog @radix-ui/react-dropdown-menu
+```
+
+`@radix-ui/react-dialog` is used by `MentionDialog`. The dropdown-menu peer remains declared for compatibility with the current package metadata and demo ecosystem.
+
+## CSS
+
+Import the package stylesheet once in your app, usually from a layout or global CSS entry:
 
 ```tsx
+import "ghost-mentions/styles";
+```
+
+or:
+
+```css
+@import "ghost-mentions/styles";
+```
+
+The stylesheet is plain CSS. It does not bundle Tailwind base or utilities.
+
+Default styles use shadcn-style CSS variables:
+
+```css
+--accent
+--accent-foreground
+--foreground
+--muted-foreground
+```
+
+If your app does not define those variables, either define them globally or override:
+
+```css
+.mention-highlight {}
+.mention-highlight-overlay {}
+.mention-textarea {}
+```
+
+`mention-textarea` sets the textarea text color to transparent so the highlight overlay can show the mention pills behind the caret. Keep that class on textareas managed by Ghost Mentions.
+
+## Quick Start
+
+### Plain Textarea
+
+```tsx
+"use client";
+
 import { useState } from "react";
-import { MentionInput } from "ghost-mentions-react";
-import type { Triggers } from "ghost-mentions-core";
+import { MentionInput } from "ghost-mentions";
+import type { MentionEntity, Triggers } from "ghost-mentions";
+import "ghost-mentions/styles";
+
+const agents: MentionEntity[] = [
+  { id: "coder", label: "Coder", type: "agent" },
+  { id: "designer", label: "Designer", type: "agent" },
+];
 
 const triggers: Triggers = {
   "@": {
     type: "agent",
-    fetch: async (query) => {
-      // Your API call here
-      return [
-        { id: "1", label: "Coder", type: "agent" },
-        { id: "2", label: "Designer", type: "agent" },
-      ];
-    },
+    fetch: async (query) =>
+      agents.filter((agent) =>
+        agent.label.toLowerCase().includes(query.toLowerCase())
+      ),
+    highlightStyle: { backgroundColor: "#d4eefb" },
   },
 };
 
-function ChatInput() {
+export function ChatInput() {
   const [value, setValue] = useState("");
 
   return (
@@ -59,258 +125,354 @@ function ChatInput() {
       onSend={({ text, mentions, markdown }) => {
         console.log({ text, mentions, markdown });
       }}
-      className="w-full rounded-md border px-3 py-2"
-      placeholder="Type @ to mention someone..."
-    />
+      persistOnSend="clear"
+      picker={{ mode: "popup" }}
+    >
+      <textarea
+        className="mention-textarea w-full rounded-md border px-3 py-2 text-sm"
+        placeholder="Type @ to mention someone..."
+        rows={4}
+      />
+    </MentionInput>
   );
 }
 ```
 
-## 📦 Packages
+### Hook + Container
 
-This is a monorepo containing:
-
-- **`ghost-mentions-core`** - Headless hook and utilities
-- **`ghost-mentions-react`** - React UI components
-- **Demo app** - Next.js showcase (see `/apps/demo`)
-
-## 🧠 Core Hook Usage
-
-For more control, use the headless hook directly:
+Use this when you need to integrate with a custom textarea component.
 
 ```tsx
-import { useMentions } from "ghost-mentions-core";
-import { MentionPopup, MentionHighlights } from "ghost-mentions-react";
+"use client";
 
-function CustomInput() {
+import { useState } from "react";
+import { MentionContainer, useMentions } from "ghost-mentions";
+import type { Triggers } from "ghost-mentions";
+import "ghost-mentions/styles";
+
+export function CustomInput({ triggers }: { triggers: Triggers }) {
   const [value, setValue] = useState("");
 
   const mention = useMentions({
     value,
     onValueChange: setValue,
-    triggers: {
-      "@": { type: "agent", fetch: fetchAgents },
-      "#": { type: "tag", fetch: fetchTags },
-    },
+    triggers,
     onSend: ({ text, mentions, markdown }) => {
-      console.log("Sent:", { text, mentions, markdown });
+      console.log({ text, mentions, markdown });
     },
-    persistOnSend: "keep", // or "prefix" | "clear"
-    picker: { mode: "popup" }, // or "dialog"
+    persistOnSend: "keep",
   });
 
   return (
-    <div className="relative">
-      <MentionHighlights
-        overlay={mention.highlights}
-        textareaRef={mention.bind.ref}
+    <MentionContainer mention={mention} mode="popup">
+      <textarea
+        {...mention.bind}
+        className="mention-textarea w-full rounded-md border px-3 py-2 text-sm"
+        placeholder="Your textarea..."
+        rows={4}
       />
-      <textarea {...mention.bind} className="..." />
-      <MentionPopup menu={mention.menu} onSelect={mention.insertMention} />
-    </div>
+    </MentionContainer>
   );
 }
 ```
 
-## ⚙️ API Reference
+## AI SDK Elements PromptInput
 
-### `useMentions(config)`
+Ghost Mentions can wrap the AI Elements `PromptInputTextarea` while leaving `PromptInput` responsible for layout and submit-button behavior.
 
-| Prop              | Type                                     | Description                              |
-| ----------------- | ---------------------------------------- | ---------------------------------------- |
-| `value`           | `string`                                 | Controlled text value                    |
-| `onValueChange`   | `(v: string) => void`                    | Value change handler                     |
-| `triggers`        | `Record<string, TriggerConfig>`          | Trigger definitions (e.g., `@`, `#`)     |
-| `onSend`          | `({ text, mentions, markdown }) => void` | Called when user presses Enter           |
-| `persistOnSend`   | `"keep" \| "prefix" \| "clear"`          | How mentions persist after send          |
-| `picker.mode`     | `"popup" \| "dialog"`                    | UI mode for mention selection            |
+Install AI SDK packages and add the AI Elements prompt input component:
 
-### TriggerConfig
+```bash
+pnpm add ai @ai-sdk/react @ai-sdk/openai
+npx ai-elements@latest add prompt-input
+```
 
-```ts
-{
-  type: string;                // Entity type (e.g., "agent", "tag")
-  fetch: (query: string) => Promise<MentionEntity[]>;
-  minChars?: number;           // Minimum chars to trigger (default: 0)
-  display?: (entity: MentionEntity) => string; // Custom display
+### Client Example
+
+This matches the demo app pattern: the user enters an OpenAI key locally, and each request sends it via an `Authorization` header.
+
+```tsx
+"use client";
+
+import { useMemo, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { MentionContainer, useMentions } from "ghost-mentions";
+import type { SendPayload, Triggers } from "ghost-mentions";
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from "@/components/ai-elements/prompt-input";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+export function ChatInput({
+  apiKey,
+  triggers,
+}: {
+  apiKey: string;
+  triggers: Triggers;
+}) {
+  const [inputValue, setInputValue] = useState("");
+
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: "/api/chat" }),
+    []
+  );
+
+  const { sendMessage, status } = useChat({ transport });
+  const isStreaming = status === "streaming" || status === "submitted";
+
+  const authHeaders = () => ({
+    Authorization: `Bearer ${apiKey}`,
+  });
+
+  const handleSend = (payload: SendPayload) => {
+    if (!apiKey) return;
+    const text = payload.markdown || payload.text;
+    if (!text.trim()) return;
+    sendMessage({ text }, { headers: authHeaders() });
+    setInputValue("");
+  };
+
+  const mention = useMentions({
+    value: inputValue,
+    onValueChange: setInputValue,
+    triggers,
+    onSend: handleSend,
+    persistOnSend: "clear",
+  });
+
+  const { ref: _mentionRef, ...mentionBindProps } = mention.bind;
+
+  return (
+    <TooltipProvider>
+      <PromptInput
+        onSubmit={(message) => {
+          if (!apiKey) return;
+          const text = mention.markdown() || message.text;
+          if (!text.trim()) return;
+          sendMessage({ text }, { headers: authHeaders() });
+          setInputValue("");
+        }}
+      >
+        <MentionContainer mention={mention} mode="popup">
+          <PromptInputTextarea
+            {...mentionBindProps}
+            className="mention-textarea !min-h-[2.5rem] !py-2 !leading-normal"
+            placeholder="Ask something... (@ agents, # tags)"
+            disabled={!apiKey || isStreaming}
+          />
+        </MentionContainer>
+
+        <PromptInputFooter>
+          <span className="text-xs text-muted-foreground">
+            @ agents &middot; # tags
+          </span>
+          <PromptInputSubmit
+            status={status}
+            disabled={!apiKey || !inputValue.trim()}
+          />
+        </PromptInputFooter>
+      </PromptInput>
+    </TooltipProvider>
+  );
 }
 ```
 
-### MentionEntity
+### Server Route
+
+Create `app/api/chat/route.ts`:
 
 ```ts
-{
+import { createOpenAI } from "@ai-sdk/openai";
+import { convertToModelMessages, streamText } from "ai";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const { messages } = body;
+  const authorization = req.headers.get("authorization") ?? "";
+  const apiKey = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length).trim()
+    : "";
+
+  if (!apiKey) {
+    return new Response("Missing OpenAI API key", { status: 401 });
+  }
+
+  const openai = createOpenAI({ apiKey });
+
+  const result = streamText({
+    model: openai("gpt-4o-mini"),
+    messages: await convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+If your app uses a server-side `OPENAI_API_KEY` instead, keep the client `sendMessage({ text })` calls and create the OpenAI provider from `process.env.OPENAI_API_KEY` in the route.
+
+### Ref Handling
+
+If the child textarea forwards refs, spread `mention.bind` directly:
+
+```tsx
+<textarea {...mention.bind} className="mention-textarea ..." />
+```
+
+If the child is a wrapper that does not forward refs, remove `ref` before spreading. `MentionContainer` will discover the native textarea inside itself:
+
+```tsx
+const { ref: _mentionRef, ...mentionBindProps } = mention.bind;
+
+<MentionContainer mention={mention} mode="popup">
+  <PromptInputTextarea {...mentionBindProps} />
+</MentionContainer>
+```
+
+Ghost Mentions handles Enter through `useMentions({ onSend })`. `PromptInput.onSubmit` should still handle submit-button clicks, and both paths should send the same payload.
+
+## API Reference
+
+### `useMentions(config)`
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `value` | `string` | Controlled textarea value |
+| `onValueChange` | `(value: string) => void` | Controlled value setter |
+| `triggers` | `Record<string, TriggerConfig>` | Trigger definitions |
+| `onSend` | `(payload: SendPayload) => void` | Called on Enter when provided |
+| `persistOnSend` | `"keep" \| "prefix" \| "clear"` | How mention tokens persist after send. Default: `"keep"` |
+| `picker` | `{ mode: "popup" \| "dialog" }` | Picker mode. Default: `{ mode: "popup" }` |
+
+### `TriggerConfig`
+
+```ts
+interface TriggerConfig {
+  type: string;
+  fetch: (query: string) => Promise<MentionEntity[]>;
+  minChars?: number;
+  debounce?: number;
+  display?: (entity: MentionEntity) => string;
+  highlightStyle?: CSSProperties;
+}
+```
+
+### `MentionEntity`
+
+```ts
+interface MentionEntity {
   id: string;
   label: string;
   type: string;
 }
 ```
 
-### Returned Methods
+### `MentionToken`
 
-| Method         | Description                                       |
-| -------------- | ------------------------------------------------- |
-| `bind`         | Props to spread onto textarea                     |
-| `tokens`       | Current mention tokens                            |
-| `highlights`   | Ranges for visual overlay                         |
-| `menu`         | State for popup/dialog                            |
-| `strip()`      | Get plain text without mentions                   |
-| `markdown()`   | Get markdown format: `@[Label](type:id)`          |
-
-## 🎨 Components
-
-### `<MentionInput />`
-
-All-in-one component combining hook + UI.
-
-```tsx
-<MentionInput
-  value={value}
-  onValueChange={setValue}
-  triggers={triggers}
-  onSend={handleSend}
-  className="..."
-  placeholder="Type @ to mention..."
-  rows={4}
-/>
+```ts
+interface MentionToken extends MentionEntity {
+  start: number;
+  end: number;
+  trigger: string;
+}
 ```
 
-### `<MentionPopup />`
+`start` and `end` are internal positions in the controlled textarea string. They can include invisible spacing used to keep the textarea caret and overlay aligned, so prefer `markdown()` or `strip()` for external payloads.
 
-Lightweight dropdown anchored to caret.
+### `SendPayload`
 
-```tsx
-<MentionPopup menu={mention.menu} onSelect={mention.insertMention} />
+```ts
+interface SendPayload {
+  text: string;
+  mentions: MentionToken[];
+  markdown: string;
+}
 ```
 
-### `<MentionDialog />`
+### `UseMentionsResult`
 
-Modal dialog with search.
+| Property | Type | Description |
+| --- | --- | --- |
+| `bind` | `TextareaBindings` | Props to spread onto a textarea |
+| `tokens` | `MentionToken[]` | Current mention tokens |
+| `highlights` | `HighlightRange[]` | Ranges consumed by `MentionHighlights` |
+| `menu` | `MenuState` | Current picker state |
+| `strip()` | `() => string` | Text with mention token display text removed |
+| `markdown()` | `() => string` | Text serialized with `@[Label](type:id)` mentions |
+| `insertMention` | `(entity: MentionEntity) => void` | Insert the selected entity |
+| `closeMenu` | `() => void` | Close the picker |
 
-```tsx
-<MentionDialog
-  menu={mention.menu}
-  onSelect={mention.insertMention}
-  onClose={mention.closeMenu}
-/>
-```
+### Components
 
-### `<MentionHighlights />`
+- `MentionInput`: all-in-one wrapper for a textarea child.
+- `MentionContainer`: wraps custom inputs with highlights plus popup/dialog picker.
+- `MentionPopup`: caret-anchored dropdown rendered in a portal.
+- `MentionDialog`: modal mention selector powered by Radix Dialog.
+- `MentionHighlights`: overlay that renders mention pills behind transparent textarea text.
 
-Ghost overlay for visual highlighting.
+## Markdown Output
 
-```tsx
-<MentionHighlights
-  overlay={mention.highlights}
-  textareaRef={mention.bind.ref}
-/>
-```
+Mentions serialize to `trigger[Label](type:id)`.
 
-## 🧪 Development
+Example user-facing text:
 
-### Prerequisites
-
-- Node.js 18+
-- pnpm 8+
-
-### Setup
-
-```bash
-git clone https://github.com/yourusername/ghost-mentions
-cd ghost-mentions
-pnpm install
-```
-
-### Run Demo
-
-```bash
-pnpm dev
-# Opens http://localhost:3000
-```
-
-### Build Packages
-
-```bash
-pnpm build
-```
-
-### Run Tests
-
-```bash
-pnpm test
-```
-
-## 📝 Example Output
-
-**Input:**
-```
+```text
 Ask @Coder about #performance
 ```
 
-**Output:**
+Example markdown:
+
+```text
+Ask @[Coder](agent:coder) about #[performance](tag:perf)
+```
+
+Example send payload shape:
+
 ```json
 {
   "text": "Ask about",
   "mentions": [
-    {
-      "id": "coder",
-      "label": "Coder",
-      "type": "agent",
-      "trigger": "@",
-      "start": 4,
-      "end": 10
-    },
-    {
-      "id": "perf",
-      "label": "performance",
-      "type": "tag",
-      "trigger": "#",
-      "start": 17,
-      "end": 29
-    }
+    { "id": "coder", "label": "Coder", "type": "agent", "trigger": "@", "start": 4, "end": 12 },
+    { "id": "perf", "label": "performance", "type": "tag", "trigger": "#", "start": 19, "end": 33 }
   ],
   "markdown": "Ask @[Coder](agent:coder) about #[performance](tag:perf)"
 }
 ```
 
-## 🎯 Design Decisions
+The exact token positions depend on the controlled textarea value and internal spacing. Treat them as useful for local token maintenance, not as stable storage identifiers.
 
-### Why textarea-first?
+## Development
 
-- Works with existing form libraries
-- Native mobile keyboard support
-- No WYSIWYG complexity
-- Accessible by default
+```bash
+git clone https://github.com/yourusername/ghost-mentions
+cd ghost-mentions
+pnpm install
+pnpm dev
+```
 
-### Why ghost highlights?
+`pnpm dev` runs the package watcher and the demo app. The demo is served at:
 
-- Non-intrusive visual feedback
-- Doesn't interfere with typing
-- Works with any textarea styling
+```text
+http://localhost:3003
+```
 
-### Why atomistic deletion?
+Useful checks:
 
-- Predictable UX (delete whole mention at once)
-- Prevents partial mentions
-- Matches Slack/Discord behavior
+```bash
+pnpm --filter ghost-mentions test:run
+pnpm -r build
+```
 
-## 🗺️ Roadmap
+To inspect the publish tarball:
 
-- [ ] Fuzzy search for popup
-- [ ] Virtualized lists for large datasets
-- [ ] Markdown → mention rehydration
-- [ ] Emoji/Avatar mention support
-- [ ] Mention suggestions from context
-- [ ] CLI scaffolder (`npx create-ghost-mentions`)
+```bash
+cd packages/ghost-mentions
+pnpm pack --pack-destination /tmp
+```
 
-## 🤝 Contributing
+## License
 
-Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
-
-## 📄 License
-
-MIT © 2025 Richard S.
-
----
-
-**Made with 🧠 for Shadcn + AI workflows**
+MIT

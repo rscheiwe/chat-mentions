@@ -1,6 +1,7 @@
 "use client";
 
-import { RefObject, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import type { CSSProperties, ReactNode, RefObject } from "react";
 import type { HighlightRange } from "../types";
 
 export interface MentionHighlightsProps {
@@ -10,8 +11,8 @@ export interface MentionHighlightsProps {
 
 export function MentionHighlights({ overlay, textareaRef }: MentionHighlightsProps) {
   const highlighterRef = useRef<HTMLDivElement>(null);
-  const [textareaStyles, setTextareaStyles] = useState<React.CSSProperties>({});
-  const [textareaValue, setTextareaValue] = useState('');
+  const [textareaStyles, setTextareaStyles] = useState<CSSProperties>({});
+  const [textareaValue, setTextareaValue] = useState("");
 
   // Copy textarea styles to highlighter (like SimpleMentionInput)
   useEffect(() => {
@@ -53,7 +54,6 @@ export function MentionHighlights({ overlay, textareaRef }: MentionHighlightsPro
 
     // Update if textarea.value differs from our state (prevents infinite loop)
     if (textarea.value !== textareaValue) {
-      console.log('MentionHighlights: syncing value programmatically', textarea.value);
       setTextareaValue(textarea.value);
     }
   }, [overlay, textareaRef, textareaValue]); // Run when overlay changes (token added)
@@ -73,45 +73,46 @@ export function MentionHighlights({ overlay, textareaRef }: MentionHighlightsPro
     return () => textarea.removeEventListener("scroll", handleScroll);
   }, [textareaRef]);
 
-  // Render highlighted text (like SimpleMentionInput.renderHighlightedText)
   const renderHighlightedText = () => {
     const text = textareaValue;
-    if (!text) return '';
+    if (!text) return null;
 
     // Sort ranges by start position
     const sortedRanges = overlay.slice().sort((a, b) => a.start - b.start);
 
-    let html = '';
+    const nodes: ReactNode[] = [];
     let lastIndex = 0;
 
-    // Build HTML by iterating through ranges based on position
-    sortedRanges.forEach((range) => {
-      // Add text before this mention (escaped)
-      const beforeText = text.substring(lastIndex, range.start);
-      html += beforeText
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    sortedRanges.forEach((range, index) => {
+      if (range.end <= lastIndex || range.start >= text.length) return;
 
-      // Add the mention (highlighted and escaped)
-      const mentionText = text.substring(range.start, range.end);
-      const escapedMention = mentionText
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-      html += `<span class="mention-highlight">${escapedMention}</span>`;
+      const start = Math.max(0, range.start);
+      const end = Math.min(text.length, range.end);
+      const beforeText = text.substring(lastIndex, start);
+      if (beforeText) {
+        nodes.push(<Fragment key={`text-${index}`}>{beforeText}</Fragment>);
+      }
 
-      lastIndex = range.end;
+      nodes.push(
+        <span
+          className="mention-highlight"
+          data-mention-type={range.type}
+          key={`mention-${index}-${start}-${end}`}
+          style={range.style}
+        >
+          {text.substring(start, end)}
+        </span>
+      );
+
+      lastIndex = end;
     });
 
-    // Add remaining text after last mention (escaped)
     const remainingText = text.substring(lastIndex);
-    html += remainingText
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    if (remainingText) {
+      nodes.push(<Fragment key="text-tail">{remainingText}</Fragment>);
+    }
 
-    return html;
+    return nodes;
   };
 
   return (
@@ -119,8 +120,9 @@ export function MentionHighlights({ overlay, textareaRef }: MentionHighlightsPro
       ref={highlighterRef}
       className="mention-highlight-overlay"
       style={textareaStyles}
-      dangerouslySetInnerHTML={{ __html: renderHighlightedText() }}
       aria-hidden="true"
-    />
+    >
+      {renderHighlightedText()}
+    </div>
   );
 }

@@ -1,28 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Minimal CSS for ghost mention overlay system */
 
-@layer components {
-  /* Highlight styling for mentions - uses shadcn accent colors */
-  .mention-highlight {
-    @apply bg-accent/40 text-accent-foreground rounded;
-  }
+/* Pill styling for mentions - em-space chars in token provide real padding */
+.mention-highlight {
+  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--accent) / 0.3);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px hsl(var(--accent-foreground) / 0.1);
+  padding: 3px 0;
+}
 
-  /* Overlay layer - positioned absolutely behind textarea */
-  .mention-highlight-overlay {
-    @apply absolute inset-0 whitespace-pre-wrap break-words overflow-hidden pointer-events-none;
-  }
+/* Overlay layer - positioned absolutely behind textarea */
+.mention-highlight-overlay {
+  position: absolute;
+  inset: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  overflow: hidden;
+  pointer-events: none;
+  line-height: 2;
+}
 
-  /* Textarea - transparent text to show overlay beneath */
-  .mention-textarea {
-    @apply relative w-full resize-none bg-transparent caret-foreground;
-    color: transparent;
-    z-index: 1;
-  }
+/* Textarea - transparent text to show overlay beneath */
+.mention-textarea {
+  position: relative;
+  width: 100%;
+  resize: none;
+  background-color: transparent;
+  caret-color: hsl(var(--foreground));
+  color: transparent;
+  z-index: 1;
+  line-height: 2;
+}
 
-  .mention-textarea::placeholder {
-    @apply text-muted-foreground;
-  }
+.mention-textarea::placeholder {
+  color: hsl(var(--muted-foreground));
 }

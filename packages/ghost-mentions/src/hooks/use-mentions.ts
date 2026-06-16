@@ -30,6 +30,18 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [tokens, setTokens] = useState<MentionToken[]>([]);
+  // Mirror tokens in a ref so every closure reads the latest value
+  const tokensRef = useRef<MentionToken[]>(tokens);
+  const updateTokens = (
+    updater: MentionToken[] | ((prev: MentionToken[]) => MentionToken[])
+  ) => {
+    setTokens((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      tokensRef.current = next;
+      return next;
+    });
+  };
+
   const [menu, setMenu] = useState<MenuState>({
     open: false,
     trigger: "",
@@ -41,6 +53,7 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
   });
 
   const debounceTimerRef = useRef<NodeJS.Timeout>();
+  const fetchRequestIdRef = useRef(0);
   const previousValueRef = useRef<string>(value);
   const triggerStartRef = useRef<number>(0);
   const isComposingRef = useRef(false);
@@ -49,15 +62,34 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
   // after the controlled value re-renders.
   const pendingCaretRef = useRef<number | null>(null);
 
-  // ---------- utilities ----------
+  // ---------- utilities (always read from tokensRef) ----------
   const inToken = (pos: number) =>
-    tokens.find((t) => pos > t.start && pos <= t.end);
+    tokensRef.current.find((t) => pos > t.start && pos <= t.end);
 
   const tokenAtOrAdjacentForBackspace = (pos: number) =>
-    tokens.find((t) => pos === t.end || (pos > t.start && pos <= t.end));
+    tokensRef.current.find(
+      (t) => pos === t.end || (pos > t.start && pos <= t.end)
+    );
+
+  const tokenRangeForBackspace = (pos: number, text: string) => {
+    const token = tokenAtOrAdjacentForBackspace(pos);
+    if (token) return { start: token.start, end: token.end };
+
+    const tokenBeforeGap = tokensRef.current.find((t) => {
+      if (pos <= t.end) return false;
+      const gap = text.slice(t.end, pos);
+      return gap.length > 0 && /^\s+$/.test(gap);
+    });
+
+    return tokenBeforeGap
+      ? { start: tokenBeforeGap.start, end: pos }
+      : null;
+  };
 
   const tokenAtOrAdjacentForDelete = (pos: number) =>
-    tokens.find((t) => pos === t.start || (pos >= t.start && pos < t.end));
+    tokensRef.current.find(
+      (t) => pos === t.start || (pos >= t.start && pos < t.end)
+    );
 
   const deleteTokenRange = (start: number, end: number) => {
     const ta = textareaRef.current!;
@@ -69,7 +101,7 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
     pendingCaretRef.current = afterDeletePos;
 
     // Shift remaining tokens and drop intersected ones
-    setTokens((prev) =>
+    updateTokens((prev) =>
       prev
         .filter((t) => t.end <= start || t.start >= end)
         .map((t) =>
@@ -93,9 +125,12 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
       if (inToken(caretPos)) return;
 
       // Walk backward to find a trigger at a word boundary
+      const currentTokens = tokensRef.current;
       for (let i = caretPos - 1; i >= 0; i--) {
         // Skip positions inside existing tokens so we don't re-detect their trigger char
-        const hitToken = tokens.find((t) => i >= t.start && i < t.end);
+        const hitToken = currentTokens.find(
+          (t) => i >= t.start && i < t.end
+        );
         if (hitToken) {
           i = hitToken.start; // loop decrements to start - 1
           continue;
@@ -114,6 +149,13 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
               ? getCaretRect(textareaRef.current)
               : null;
 
+            // If the menu is already open with the same trigger+query,
+            // just update the caret position — don't re-fetch or reset loading.
+            if (menu.open && menu.trigger === ch && menu.query === query) {
+              setMenu((m) => ({ ...m, caretRect }));
+              return;
+            }
+
             setMenu((m) => ({
               ...m,
               open: true,
@@ -125,32 +167,74 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
             }));
 
             clearTimeout(debounceTimerRef.current);
-            debounceTimerRef.current = setTimeout(async () => {
+            const requestId = ++fetchRequestIdRef.current;
+            const fetchItems = async () => {
               try {
                 const items = query.length >= min ? await cfg.fetch(query) : [];
-                setMenu((m) => ({ ...m, items, loading: false }));
+                setMenu((m) => {
+                  if (
+                    requestId !== fetchRequestIdRef.current ||
+                    !m.open ||
+                    m.trigger !== ch ||
+                    m.query !== query
+                  ) {
+                    return m;
+                  }
+                  return { ...m, items, loading: false };
+                });
               } catch (e) {
                 console.error("mention fetch failed", e);
-                setMenu((m) => ({ ...m, items: [], loading: false }));
+                setMenu((m) => {
+                  if (
+                    requestId !== fetchRequestIdRef.current ||
+                    !m.open ||
+                    m.trigger !== ch ||
+                    m.query !== query
+                  ) {
+                    return m;
+                  }
+                  return { ...m, items: [], loading: false };
+                });
               }
-            }, 120);
+            };
+            const delay = cfg.debounce ?? 0;
+            if (delay > 0) {
+              debounceTimerRef.current = setTimeout(fetchItems, delay);
+            } else {
+              fetchItems();
+            }
             return;
           }
         }
         if (/\s/.test(ch)) break; // stop at whitespace
       }
 
-      if (menu.open) setMenu((m) => ({ ...m, open: false }));
+      if (menu.open) {
+        fetchRequestIdRef.current += 1;
+        clearTimeout(debounceTimerRef.current);
+        setMenu((m) => ({ ...m, open: false }));
+      }
     },
-    [triggers, menu.open, tokens]
+    [triggers, menu.open, menu.trigger, menu.query]
   );
+
+  useEffect(() => {
+    return () => {
+      fetchRequestIdRef.current += 1;
+      clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
   // ---------- external value sync ----------
   useEffect(() => {
     if (value === previousValueRef.current) return;
-    const adjusted = adjustTokenRanges(tokens, previousValueRef.current, value);
+    const adjusted = adjustTokenRanges(
+      tokensRef.current,
+      previousValueRef.current,
+      value
+    );
     previousValueRef.current = value;
-    setTokens(adjusted);
+    updateTokens(adjusted);
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep popup anchored when menu is open
@@ -183,6 +267,11 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const next = e.target.value;
       const caret = e.target.selectionStart ?? next.length;
+      const prev = previousValueRef.current;
+      if (next !== prev) {
+        const adjusted = adjustTokenRanges(tokensRef.current, prev, next);
+        updateTokens(adjusted);
+      }
       previousValueRef.current = next;
       onValueChange(next);
       detectTrigger(next, caret);
@@ -217,7 +306,11 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
       const cfg = triggers[menu.trigger];
       const label = cfg?.display?.(entity) ?? entity.label;
       const tokenText = `${menu.trigger}${label}`;
-      const replacement = `${tokenText} `; // includes trailing space
+      // Pad with em-spaces so the pill has real character-width padding
+      // that the cursor respects (CSS padding can't move a textarea caret)
+      const PAD = "\u2003"; // em space
+      const paddedToken = `${PAD}${tokenText}${PAD}`;
+      const replacement = `${paddedToken}   `; // trailing spaces for cursor gap
 
       // 1) Replace in DOM; browser updates caret atomically
       ta.setRangeText(replacement, triggerStart, caretPos, "end");
@@ -225,7 +318,7 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
 
       const newValue = ta.value;
 
-      // 2) Shift existing tokens & add new token (token excludes trailing space)
+      // 2) Shift existing tokens & add new token (token covers padded range)
       const removedLen = caretPos - triggerStart;
       const delta = replacement.length - removedLen;
 
@@ -233,10 +326,10 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
         ...entity,
         trigger: menu.trigger,
         start: triggerStart,
-        end: triggerStart + tokenText.length,
+        end: triggerStart + paddedToken.length,
       };
 
-      setTokens((prev) => {
+      updateTokens((prev) => {
         const shifted = prev.map((t) =>
           t.start >= caretPos
             ? { ...t, start: t.start + delta, end: t.end + delta }
@@ -303,19 +396,22 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
       if (e.key === "Enter" && !e.shiftKey) {
         if (onSend) {
           e.preventDefault();
+          const currentTokens = tokensRef.current;
           const payload = {
             text: strip(),
-            mentions: tokens,
+            mentions: currentTokens,
             markdown: markdown(),
           };
 
           if (persistOnSend === "clear") {
-            setTokens([]);
+            updateTokens([]);
             previousValueRef.current = "";
             onValueChange("");
           } else if (persistOnSend === "prefix") {
             // move mentions to front as raw text
-            const ordered = [...tokens].sort((a, b) => a.start - b.start);
+            const ordered = [...currentTokens].sort(
+              (a, b) => a.start - b.start
+            );
             const head = ordered
               .map((t) => value.slice(t.start, t.end))
               .join(" ");
@@ -334,7 +430,7 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
                       );
               return { ...t, start: offset, end: offset + text.length };
             });
-            setTokens(remapped);
+            updateTokens(remapped);
             previousValueRef.current = next;
             onValueChange(next);
           }
@@ -344,11 +440,12 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
       }
 
       // Atomistic deletion with selection spanning tokens
+      const currentTokens = tokensRef.current;
       if (
         (e.key === "Backspace" || e.key === "Delete") &&
         posStart !== posEnd
       ) {
-        const touched = tokens.filter(
+        const touched = currentTokens.filter(
           (t) => Math.max(posStart, t.start) < Math.min(posEnd, t.end)
         );
         if (touched.length) {
@@ -362,10 +459,10 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
 
       // Backspace at/inside token → delete whole token
       if (e.key === "Backspace" && posStart === posEnd) {
-        const tok = tokenAtOrAdjacentForBackspace(posStart);
-        if (tok) {
+        const range = tokenRangeForBackspace(posStart, ta.value);
+        if (range) {
           e.preventDefault();
-          deleteTokenRange(tok.start, tok.end);
+          deleteTokenRange(range.start, range.end);
           return;
         }
       }
@@ -388,15 +485,15 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
       insertMention,
       onSend,
       persistOnSend,
-      tokens,
       value,
     ]
   );
 
   // ---------- strip & markdown ----------
   const strip = useCallback((): string => {
-    if (!tokens.length) return value.trim();
-    const ordered = [...tokens].sort((a, b) => a.start - b.start);
+    const currentTokens = tokensRef.current;
+    if (!currentTokens.length) return value.trim();
+    const ordered = [...currentTokens].sort((a, b) => a.start - b.start);
     let out = "";
     let idx = 0;
     for (const t of ordered) {
@@ -405,19 +502,24 @@ export function useMentions(config: UseMentionsConfig): UseMentionsResult {
     }
     out += value.slice(idx);
     return out.trim();
-  }, [value, tokens]);
+  }, [value]);
 
   const markdown = useCallback((): string => {
-    return serializeMarkdown(value, tokens);
-  }, [value, tokens]);
+    return serializeMarkdown(value, tokensRef.current);
+  }, [value]);
 
   // ---------- highlights for overlay ----------
-  const highlights: HighlightRange[] = tokens.map((t) => ({
-    start: t.start,
-    end: t.end,
-    label: t.label,
-    type: t.type,
-  }));
+  // Extend highlight to include trailing space so the cursor sits at the pill edge, not inside it
+  const highlights: HighlightRange[] = tokens.map((t) => {
+    const cfg = triggers[t.trigger];
+    return {
+      start: t.start,
+      end: t.end < value.length && value[t.end] === " " ? t.end + 1 : t.end,
+      label: t.label,
+      type: t.type,
+      ...(cfg?.highlightStyle ? { style: cfg.highlightStyle } : {}),
+    };
+  });
 
   return {
     bind: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useRef, useLayoutEffect, useState, MutableRefObject } from "react";
 import type { UseMentionsResult } from "../types";
 import { MentionHighlights } from "./mention-highlights";
 import { MentionPopup } from "./mention-popup";
@@ -29,9 +29,30 @@ export function MentionContainer({
   children,
   mode = "popup"
 }: MentionContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [textareaFound, setTextareaFound] = useState(false);
+
+  // Auto-discover the native <textarea> inside the container when the ref
+  // hasn't been forwarded (e.g., wrapped in non-forwardRef components like
+  // AI Elements PromptInputTextarea).
+  useLayoutEffect(() => {
+    if (mention.bind.ref.current) {
+      if (!textareaFound) setTextareaFound(true);
+      return;
+    }
+    const container = containerRef.current;
+    if (!container) return;
+    const textarea = container.querySelector("textarea");
+    if (textarea) {
+      (mention.bind.ref as MutableRefObject<HTMLTextAreaElement | null>).current = textarea;
+      setTextareaFound(true);
+    }
+  });
+
   return (
-    <div className="relative" style={{ position: "relative" }}>
+    <div ref={containerRef} className="relative w-full" style={{ position: "relative", width: "100%" }}>
       <MentionHighlights
+        key={textareaFound ? "found" : "pending"}
         overlay={mention.highlights}
         textareaRef={mention.bind.ref}
       />

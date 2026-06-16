@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["ghost-mentions-core", "ghost-mentions-react"],
+  transpilePackages: ["ghost-mentions"],
 };
 
 export default nextConfig;

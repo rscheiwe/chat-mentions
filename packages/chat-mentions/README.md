@@ -18,11 +18,15 @@ It provides a headless hook, textarea bindings, ghost-highlight rendering, and p
 
 ### Demo Flow
 
+The markdown mention is correctly parsed from the message text before being sent to the LLM.
+
 | Input | Output |
 | --- | --- |
 | <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/mentions.png" alt="Chat Mentions demo input" width="420" /> | <img src="https://raw.githubusercontent.com/rscheiwe/chat-mentions/main/docs/assets/request-text.png" alt="Chat Mentions request text output" width="420" /> |
 
 ### Pickers
+
+Two picker modes are available to choose from: a caret-anchored popup for inline composition and a dialog for more deliberate selection flows.
 
 | Popup picker                                                                              | Dialog picker                                                                 |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
